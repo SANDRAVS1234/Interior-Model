@@ -19,11 +19,10 @@ st.markdown(
 @st.cache_resource
 def load_model():
     try:
-        model_id = "./interior_model"  # or your Hugging Face repo: "username/interior-style-model"
+        model_id = "runwayml/stable-diffusion-v1-5"  # ✅ Use a public model
         pipe = StableDiffusionPipeline.from_pretrained(
             model_id,
-            torch_dtype=torch.float16,
-            local_files_only=True
+            torch_dtype=torch.float16
         ).to("cuda")
         pipe.enable_attention_slicing()
         return pipe
@@ -31,7 +30,6 @@ def load_model():
         st.error(f"❌ Failed to load model: {e}")
         return None
 
-pipe = load_model()
 
 # -----------------------
 # 3. Image upload section
@@ -85,3 +83,4 @@ st.sidebar.info(
     "This demo fine-tunes Stable Diffusion to reimagine room photos in various interior design styles. "
     "Trained with LoRA on Pinterest-style interior datasets."
 )
+
