@@ -1,89 +1,87 @@
-# app.py
 import streamlit as st
 from diffusers import StableDiffusionPipeline
 import torch
 from PIL import Image
 
-# -----------------------------
-# Streamlit Page Configuration
-# -----------------------------
-st.set_page_config(
-    page_title="AI Interior Designer 🎨",
-    layout="wide",
-    page_icon="🏠"
+# -----------------------
+# 1. Page configuration
+# -----------------------
+st.set_page_config(page_title="AI Interior Style Generator", layout="centered")
+st.title("🏠 AI Interior Design Style Generator")
+st.markdown(
+    "Upload a room photo and choose a target interior design style. "
+    "The app will reimagine your room in that style using a diffusion model."
 )
 
-# -----------------------------
-# App Title
-# -----------------------------
-st.title("🏠 AI Interior Design Generator")
-st.markdown("### Generate stunning interior designs from text prompts using Stable Diffusion!")
-
-# -----------------------------
-# Model Loading (Cached)
-# -----------------------------
+# -----------------------
+# 2. Load model (cached)
+# -----------------------
 @st.cache_resource
 def load_model():
-    model_path = "./interior_model"  # Local model folder
-    pipe = StableDiffusionPipeline.from_pretrained(
-        model_path,
-        torch_dtype=torch.float16,
-        local_files_only=True  # ✅ Add this line
-    ).to("cuda")
-    pipe.enable_attention_slicing()
-    return pipe
+    try:
+        model_id = "./interior_model"  # or your Hugging Face repo: "username/interior-style-model"
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            local_files_only=True
+        ).to("cuda")
+        pipe.enable_attention_slicing()
+        return pipe
+    except Exception as e:
+        st.error(f"❌ Failed to load model: {e}")
+        return None
 
+pipe = load_model()
 
-# -----------------------------
-# UI Controls
-# -----------------------------
-room_types = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Office", "Dining Room"]
-styles = ["Modern", "Minimalist", "Scandinavian", "Industrial", "Bohemian", "Traditional"]
-
-col1, col2 = st.columns(2)
-with col1:
-    room = st.selectbox("Select Room Type:", room_types)
-with col2:
-    style = st.selectbox("Select Interior Style:", styles)
-
-custom_prompt = st.text_input(
-    "Add extra details (optional):",
-    placeholder="e.g. with wooden flooring and indoor plants"
+# -----------------------
+# 3. Image upload section
+# -----------------------
+st.subheader("Upload Your Room Image 🖼️")
+uploaded_file = st.file_uploader(
+    "Choose a room image (JPG or PNG)",
+    type=["jpg", "jpeg", "png"]
 )
 
-prompt = f"A {style.lower()} style {room.lower()} interior design {custom_prompt}"
+styles = [
+    "Modern", "Minimalist", "Vintage", "Industrial",
+    "Bohemian", "Scandinavian", "Traditional",
+    "Contemporary", "Rustic", "Coastal"
+]
+target_style = st.selectbox("🎨 Choose Target Interior Style", styles)
 
-steps = st.slider("Diffusion Steps", 10, 50, 25)
-guidance = st.slider("Guidance Scale", 1.0, 10.0, 7.5)
-generate_btn = st.button("✨ Generate Design")
+generate_button = st.button("✨ Generate Styled Room")
 
-# -----------------------------
-# Image Generation
-# -----------------------------
-if generate_btn:
-    with st.spinner("🎨 Generating your interior design... please wait..."):
-        image = pipe(
-            prompt,
-            num_inference_steps=steps,
-            guidance_scale=guidance
-        ).images[0]
+# -----------------------
+# 4. Generate new style
+# -----------------------
+if generate_button:
+    if uploaded_file is None:
+        st.warning("⚠️ Please upload a room image first.")
+    elif pipe is None:
+        st.error("Model not loaded properly. Check your path or GPU settings.")
+    else:
+        with st.spinner("🎨 Generating your new design... please wait."):
+            # Open and preprocess image
+            init_image = Image.open(uploaded_file).convert("RGB")
+            init_image = init_image.resize((512, 512))
 
-        st.image(image, caption=f"Generated: {prompt}", use_container_width=True)
+            prompt = f"A {target_style.lower()} style interior design of this room, photo-realistic, high quality."
+            
+            # Generate with diffusion model
+            result = pipe(prompt=prompt, image=init_image, strength=0.8, guidance_scale=7.5)
 
-        # Save and offer download
-        output_path = "generated_design.png"
-        image.save(output_path)
-        with open(output_path, "rb") as file:
-            st.download_button(
-                label="⬇️ Download Design",
-                data=file,
-                file_name="interior_design.png",
-                mime="image/png"
-            )
+            if "images" in result and len(result["images"]) > 0:
+                styled_image = result["images"][0]
+                st.image(styled_image, caption=f"{target_style} Style Room", use_column_width=True)
+                st.success("✅ Style generation completed!")
+            else:
+                st.error("⚠️ No image generated. Please retry or check model configuration.")
 
-# -----------------------------
-# Footer
-# -----------------------------
-st.markdown("---")
-st.markdown("💡 *Built with Stable Diffusion and Streamlit — by AI Interior Designer*")
-
+# -----------------------
+# 5. Sidebar Info
+# -----------------------
+st.sidebar.header("ℹ️ About")
+st.sidebar.info(
+    "This demo fine-tunes Stable Diffusion to reimagine room photos in various interior design styles. "
+    "Trained with LoRA on Pinterest-style interior datasets."
+)
