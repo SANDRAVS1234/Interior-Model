@@ -24,15 +24,15 @@ st.markdown("### Generate stunning interior designs from text prompts using Stab
 # -----------------------------
 @st.cache_resource
 def load_model():
-    model_path = "./interior_model"  # Change this to your model directory or Hugging Face ID
+    model_path = "./interior_model"  # Local model folder
     pipe = StableDiffusionPipeline.from_pretrained(
         model_path,
-        torch_dtype=torch.float16
+        torch_dtype=torch.float16,
+        local_files_only=True  # ✅ Add this line
     ).to("cuda")
     pipe.enable_attention_slicing()
     return pipe
 
-pipe = load_model()
 
 # -----------------------------
 # UI Controls
@@ -86,3 +86,4 @@ if generate_btn:
 # -----------------------------
 st.markdown("---")
 st.markdown("💡 *Built with Stable Diffusion and Streamlit — by AI Interior Designer*")
+
