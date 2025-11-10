@@ -18,17 +18,23 @@ st.markdown(
 # -----------------------
 @st.cache_resource
 def load_model():
+    model_path = "./interior_model"
     try:
-        model_id = "runwayml/stable-diffusion-v1-5"  # ✅ Use a public model
         pipe = StableDiffusionPipeline.from_pretrained(
-            model_id,
+            model_path,
             torch_dtype=torch.float16
         ).to("cuda")
         pipe.enable_attention_slicing()
         return pipe
     except Exception as e:
-        st.error(f"❌ Failed to load model: {e}")
+        st.error(f"❌ Model loading failed: {e}")
         return None
+
+pipe = load_model()
+
+if pipe is None:
+    st.stop()
+
 
 
 # -----------------------
@@ -83,4 +89,5 @@ st.sidebar.info(
     "This demo fine-tunes Stable Diffusion to reimagine room photos in various interior design styles. "
     "Trained with LoRA on Pinterest-style interior datasets."
 )
+
 
