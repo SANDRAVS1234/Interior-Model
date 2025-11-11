@@ -18,7 +18,7 @@ st.markdown(
 # -----------------------
 @st.cache_resource
 def load_model():
-    model_path = "./interior_model"
+    model_path = "interior_model"
     try:
         pipe = StableDiffusionPipeline.from_pretrained(
             model_path,
@@ -89,5 +89,6 @@ st.sidebar.info(
     "This demo fine-tunes Stable Diffusion to reimagine room photos in various interior design styles. "
     "Trained with LoRA on Pinterest-style interior datasets."
 )
+
 
 
