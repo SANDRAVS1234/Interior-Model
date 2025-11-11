@@ -18,13 +18,26 @@ st.markdown(
 # -----------------------
 @st.cache_resource
 def load_model():
-    model_id = "runwayml/stable-diffusion-v1-5"  # or another model like "stabilityai/stable-diffusion-2-1"
-    pipe = StableDiffusionPipeline.from_pretrained(
-        model_id,
-        torch_dtype=torch.float16
-    ).to("cuda")
-    pipe.enable_attention_slicing()
-    return pipe
+    try:
+        model_id = "runwayml/stable-diffusion-v1-5"  # public model from Hugging Face
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16
+        ).to("cuda")
+        pipe.enable_attention_slicing()
+        return pipe
+    except Exception as e:
+        st.error(f"⚠️ Model loading failed: {e}")
+        return None
+
+# --- initialize pipe safely ---
+pipe = None
+pipe = load_model()
+
+if pipe is None:
+    st.error("🚫 Model could not be loaded. Please check your internet or model path.")
+else:
+    st.success("✅ Model loaded successfully!")
 
 
 
@@ -81,6 +94,7 @@ st.sidebar.info(
     "This demo fine-tunes Stable Diffusion to reimagine room photos in various interior design styles. "
     "Trained with LoRA on Pinterest-style interior datasets."
 )
+
 
 
 
